@@ -55,6 +55,7 @@ import java.util.Objects;
 import java.util.SplittableRandom;
 import java.util.WeakHashMap;
 
+import com.oracle.truffle.js.runtime.builtins.*;
 import org.graalvm.home.HomeFinder;
 import org.graalvm.options.OptionValues;
 
@@ -100,40 +101,6 @@ import com.oracle.truffle.js.nodes.JavaScriptNode;
 import com.oracle.truffle.js.runtime.JSContext.BuiltinFunctionKey;
 import com.oracle.truffle.js.runtime.array.TypedArray;
 import com.oracle.truffle.js.runtime.array.TypedArrayFactory;
-import com.oracle.truffle.js.runtime.builtins.Builtin;
-import com.oracle.truffle.js.runtime.builtins.JSAdapter;
-import com.oracle.truffle.js.runtime.builtins.JSArray;
-import com.oracle.truffle.js.runtime.builtins.JSArrayBuffer;
-import com.oracle.truffle.js.runtime.builtins.JSArrayBufferView;
-import com.oracle.truffle.js.runtime.builtins.JSBigInt;
-import com.oracle.truffle.js.runtime.builtins.JSBoolean;
-import com.oracle.truffle.js.runtime.builtins.JSConstructor;
-import com.oracle.truffle.js.runtime.builtins.JSDataView;
-import com.oracle.truffle.js.runtime.builtins.JSDate;
-import com.oracle.truffle.js.runtime.builtins.JSError;
-import com.oracle.truffle.js.runtime.builtins.JSFinalizationRegistry;
-import com.oracle.truffle.js.runtime.builtins.JSFunction;
-import com.oracle.truffle.js.runtime.builtins.JSFunctionData;
-import com.oracle.truffle.js.runtime.builtins.JSGlobal;
-import com.oracle.truffle.js.runtime.builtins.JSMap;
-import com.oracle.truffle.js.runtime.builtins.JSMath;
-import com.oracle.truffle.js.runtime.builtins.JSNumber;
-import com.oracle.truffle.js.runtime.builtins.JSON;
-import com.oracle.truffle.js.runtime.builtins.JSObjectFactory;
-import com.oracle.truffle.js.runtime.builtins.JSObjectPrototype;
-import com.oracle.truffle.js.runtime.builtins.JSOrdinary;
-import com.oracle.truffle.js.runtime.builtins.JSPromise;
-import com.oracle.truffle.js.runtime.builtins.JSProxy;
-import com.oracle.truffle.js.runtime.builtins.JSRegExp;
-import com.oracle.truffle.js.runtime.builtins.JSSet;
-import com.oracle.truffle.js.runtime.builtins.JSSharedArrayBuffer;
-import com.oracle.truffle.js.runtime.builtins.JSString;
-import com.oracle.truffle.js.runtime.builtins.JSSymbol;
-import com.oracle.truffle.js.runtime.builtins.JSTest262;
-import com.oracle.truffle.js.runtime.builtins.JSTestV8;
-import com.oracle.truffle.js.runtime.builtins.JSWeakMap;
-import com.oracle.truffle.js.runtime.builtins.JSWeakRef;
-import com.oracle.truffle.js.runtime.builtins.JSWeakSet;
 import com.oracle.truffle.js.runtime.builtins.intl.JSCollator;
 import com.oracle.truffle.js.runtime.builtins.intl.JSDateTimeFormat;
 import com.oracle.truffle.js.runtime.builtins.intl.JSDisplayNames;
@@ -250,6 +217,7 @@ public class JSRealm {
     private final DynamicObject weakMapPrototype;
     private final DynamicObject weakSetConstructor;
     private final DynamicObject weakSetPrototype;
+    private final DynamicObject iteratorConstructor;
 
     private final DynamicObject mathObject;
     private DynamicObject realmBuiltinObject;
@@ -509,6 +477,9 @@ public class JSRealm {
             ctor = JSPromise.createConstructor(this);
             this.promiseConstructor = ctor.getFunctionObject();
             this.promisePrototype = ctor.getPrototype();
+            ctor = JSIterator.createConstructor(this);
+            this.iteratorConstructor = ctor.getFunctionObject();
+            this.iteratorPrototype = ctor.getPrototype();
         } else {
             this.symbolConstructor = null;
             this.symbolPrototype = null;
@@ -520,6 +491,8 @@ public class JSRealm {
             this.weakMapPrototype = null;
             this.weakSetConstructor = null;
             this.weakSetPrototype = null;
+            this.iteratorConstructor = null;
+            this.iteratorPrototype = null;
             this.proxyConstructor = null;
             this.proxyPrototype = null;
             this.promiseConstructor = null;
@@ -552,7 +525,6 @@ public class JSRealm {
             this.bigIntPrototype = null;
         }
 
-        this.iteratorPrototype = createIteratorPrototype();
         this.arrayIteratorPrototype = es6 ? createArrayIteratorPrototype() : null;
         this.setIteratorPrototype = es6 ? createSetIteratorPrototype() : null;
         this.mapIteratorPrototype = es6 ? createMapIteratorPrototype() : null;
@@ -1186,6 +1158,10 @@ public class JSRealm {
         return throwerAccessor;
     }
 
+    public final DynamicObject getIteratorConstructor() {
+        return iteratorConstructor;
+    }
+
     public DynamicObject getIteratorPrototype() {
         return iteratorPrototype;
     }
@@ -1340,6 +1316,7 @@ public class JSRealm {
             putGlobalProperty(JSSet.CLASS_NAME, getSetConstructor());
             putGlobalProperty(JSWeakMap.CLASS_NAME, getWeakMapConstructor());
             putGlobalProperty(JSWeakSet.CLASS_NAME, getWeakSetConstructor());
+            putGlobalProperty(JSIterator.CLASS_NAME, getIteratorConstructor());
             putGlobalProperty(JSSymbol.CLASS_NAME, getSymbolConstructor());
             setupPredefinedSymbols(getSymbolConstructor());
 
@@ -1662,19 +1639,6 @@ public class JSRealm {
         DynamicObject obj = JSOrdinary.createInit(this);
         JSObjectUtil.putFunctionsFromContainer(this, obj, PerformanceBuiltins.BUILTINS);
         return obj;
-    }
-
-    /**
-     * Creates the %IteratorPrototype% object as specified in ES6 25.1.2.
-     */
-    private DynamicObject createIteratorPrototype() {
-        DynamicObject prototype = JSObjectUtil.createOrdinaryPrototypeObject(this, this.getObjectPrototype());
-        JSObjectUtil.putDataProperty(context, prototype, Symbol.SYMBOL_ITERATOR, createIteratorPrototypeSymbolIteratorFunction(this), JSAttributes.getDefaultNotEnumerable());
-        return prototype;
-    }
-
-    private static DynamicObject createIteratorPrototypeSymbolIteratorFunction(JSRealm realm) {
-        return JSFunction.create(realm, JSFunctionData.createCallOnly(realm.getContext(), realm.getContext().getSpeciesGetterFunctionCallTarget(), 0, "[Symbol.iterator]"));
     }
 
     /**
