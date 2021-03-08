@@ -2305,24 +2305,22 @@ public final class ConstructorBuiltins extends JSBuiltinsContainer.SwitchEnum<Co
 
     }
 
-    public abstract static class ConstructIteratorNode extends ConstructSetNode {
+    public abstract static class ConstructIteratorNode extends JSConstructIterableOperation {
         public ConstructIteratorNode(JSContext context, JSBuiltin builtin, boolean isNewTargetCase) {
             super(context, builtin, isNewTargetCase);
         }
 
-        @Override
         @Specialization
-        protected DynamicObject constructSet(DynamicObject newTarget, Object iterable) {
+        protected DynamicObject constructIterator(DynamicObject newTarget) {
             JSContext context = getContext();
             DynamicObject setObj = JSIterator.create(context);
-            fillWithIterable(setObj, iterable);
             swapPrototype(setObj, newTarget);
             return setObj;
         }
 
         @Override
         protected DynamicObject getIntrinsicDefaultProto(JSRealm realm) {
-            return realm.getWeakMapPrototype();
+            return realm.getIteratorPrototype();
         }
     }
 

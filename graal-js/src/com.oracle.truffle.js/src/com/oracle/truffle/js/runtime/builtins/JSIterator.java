@@ -43,6 +43,7 @@ package com.oracle.truffle.js.runtime.builtins;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.Shape;
+import com.oracle.truffle.js.builtins.IteratorPrototypeBuiltins;
 import com.oracle.truffle.js.runtime.JSContext;
 import com.oracle.truffle.js.runtime.JSRealm;
 import com.oracle.truffle.js.runtime.Symbol;
@@ -56,14 +57,12 @@ public final class JSIterator extends JSNonProxy implements JSConstructorFactory
     public static final String CLASS_NAME = "Iterator";
     public static final String PROTOTYPE_NAME = CLASS_NAME + ".prototype";
 
-    private JSIterator() {
-    }
+    private JSIterator() {}
 
     public static DynamicObject create(JSContext context) {
         JSRealm realm = context.getRealm();
         JSObjectFactory factory = context.getIteratorFactory();
-        DynamicObject obj = JSObjectUtil.createOrdinaryPrototypeObject(realm);
-        factory.initProto(obj, realm);
+        DynamicObject obj = factory.initProto(new JSIteratorObject(factory.getShape(realm)), realm);
         return context.trackAllocation(obj);
     }
 
@@ -72,6 +71,8 @@ public final class JSIterator extends JSNonProxy implements JSConstructorFactory
         JSContext ctx = realm.getContext();
         DynamicObject prototype = JSObjectUtil.createOrdinaryPrototypeObject(realm);
         JSObjectUtil.putDataProperty(ctx, prototype, Symbol.SYMBOL_ITERATOR, createIteratorPrototypeSymbolIteratorFunction(realm), JSAttributes.getDefaultNotEnumerable());
+        JSObjectUtil.putFunctionsFromContainer(realm, prototype, IteratorPrototypeBuiltins.BUILTINS);
+        JSObjectUtil.putToStringTag(prototype, CLASS_NAME);
         return prototype;
     }
 
@@ -88,6 +89,11 @@ public final class JSIterator extends JSNonProxy implements JSConstructorFactory
 
     public static JSConstructor createConstructor(JSRealm realm) {
         return INSTANCE.createConstructorAndPrototype(realm);
+    }
+
+    public static boolean isJSIterator(Object obj) {
+        // TODO: Create Iterator Object
+        return true;
     }
 
     @Override
@@ -112,6 +118,6 @@ public final class JSIterator extends JSNonProxy implements JSConstructorFactory
 
     @Override
     public DynamicObject getIntrinsicDefaultProto(JSRealm realm) {
-        return realm.getWeakSetPrototype();
+        return realm.getIteratorPrototype();
     }
 }

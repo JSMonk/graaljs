@@ -49,30 +49,7 @@ import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.js.runtime.BigInt;
 import com.oracle.truffle.js.runtime.JSRuntime;
 import com.oracle.truffle.js.runtime.Symbol;
-import com.oracle.truffle.js.runtime.builtins.JSAdapter;
-import com.oracle.truffle.js.runtime.builtins.JSArgumentsArray;
-import com.oracle.truffle.js.runtime.builtins.JSArray;
-import com.oracle.truffle.js.runtime.builtins.JSArrayBuffer;
-import com.oracle.truffle.js.runtime.builtins.JSArrayBufferView;
-import com.oracle.truffle.js.runtime.builtins.JSBigInt;
-import com.oracle.truffle.js.runtime.builtins.JSBoolean;
-import com.oracle.truffle.js.runtime.builtins.JSClass;
-import com.oracle.truffle.js.runtime.builtins.JSDate;
-import com.oracle.truffle.js.runtime.builtins.JSFinalizationRegistry;
-import com.oracle.truffle.js.runtime.builtins.JSFunction;
-import com.oracle.truffle.js.runtime.builtins.JSMap;
-import com.oracle.truffle.js.runtime.builtins.JSModuleNamespace;
-import com.oracle.truffle.js.runtime.builtins.JSNumber;
-import com.oracle.truffle.js.runtime.builtins.JSOrdinary;
-import com.oracle.truffle.js.runtime.builtins.JSProxy;
-import com.oracle.truffle.js.runtime.builtins.JSRegExp;
-import com.oracle.truffle.js.runtime.builtins.JSSet;
-import com.oracle.truffle.js.runtime.builtins.JSSharedArrayBuffer;
-import com.oracle.truffle.js.runtime.builtins.JSString;
-import com.oracle.truffle.js.runtime.builtins.JSSymbol;
-import com.oracle.truffle.js.runtime.builtins.JSWeakMap;
-import com.oracle.truffle.js.runtime.builtins.JSWeakRef;
-import com.oracle.truffle.js.runtime.builtins.JSWeakSet;
+import com.oracle.truffle.js.runtime.builtins.*;
 import com.oracle.truffle.js.runtime.builtins.intl.JSCollator;
 import com.oracle.truffle.js.runtime.builtins.intl.JSDateTimeFormat;
 import com.oracle.truffle.js.runtime.builtins.intl.JSDisplayNames;
@@ -324,6 +301,10 @@ public final class JSGuards {
 
     public static boolean isJSWeakSet(Object value) {
         return JSWeakSet.isJSWeakSet(value);
+    }
+
+    public static boolean isJSIterator(Object value) {
+        return JSIterator.isJSIterator(value);
     }
 
     public static boolean isJSModuleNamespace(Object value) {
