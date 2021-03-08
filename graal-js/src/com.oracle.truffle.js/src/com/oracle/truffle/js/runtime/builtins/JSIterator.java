@@ -43,6 +43,7 @@ package com.oracle.truffle.js.runtime.builtins;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.Shape;
+import com.oracle.truffle.js.builtins.IteratorFunctionBuiltins;
 import com.oracle.truffle.js.builtins.IteratorPrototypeBuiltins;
 import com.oracle.truffle.js.runtime.JSContext;
 import com.oracle.truffle.js.runtime.JSRealm;
@@ -50,7 +51,7 @@ import com.oracle.truffle.js.runtime.Symbol;
 import com.oracle.truffle.js.runtime.objects.JSAttributes;
 import com.oracle.truffle.js.runtime.objects.JSObjectUtil;
 
-public final class JSIterator extends JSNonProxy implements JSConstructorFactory.Default, PrototypeSupplier {
+public final class JSIterator extends JSNonProxy implements JSConstructorFactory.Default.WithFunctions, PrototypeSupplier {
 
     public static final JSIterator INSTANCE = new JSIterator();
 
@@ -88,7 +89,7 @@ public final class JSIterator extends JSNonProxy implements JSConstructorFactory
     }
 
     public static JSConstructor createConstructor(JSRealm realm) {
-        return INSTANCE.createConstructorAndPrototype(realm);
+        return INSTANCE.createConstructorAndPrototype(realm, IteratorFunctionBuiltins.BUILTINS);
     }
 
     public static boolean isJSIterator(Object obj) {

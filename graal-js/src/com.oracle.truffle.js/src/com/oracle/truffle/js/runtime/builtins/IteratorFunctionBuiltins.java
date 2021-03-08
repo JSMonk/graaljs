@@ -41,11 +41,9 @@
 package com.oracle.truffle.js.builtins;
 
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.object.DynamicObject;
-import com.oracle.truffle.js.builtins.IteratorPrototypeBuiltinsFactory.JSIteratorToArrayNodeGen;
+import com.oracle.truffle.js.builtins.IteratorFunctionBuiltinsFactory.JSIteratorFromNodeGen;
 import com.oracle.truffle.js.nodes.function.JSBuiltin;
 import com.oracle.truffle.js.nodes.function.JSBuiltinNode;
-import com.oracle.truffle.js.runtime.Errors;
 import com.oracle.truffle.js.runtime.JSContext;
 import com.oracle.truffle.js.runtime.builtins.BuiltinEnum;
 import com.oracle.truffle.js.runtime.builtins.JSIterator;
@@ -53,22 +51,22 @@ import com.oracle.truffle.js.runtime.objects.JSDynamicObject;
 import com.oracle.truffle.js.runtime.objects.Undefined;
 
 /**
- * Contains builtins for {@linkplain JSIterator}.prototype.
+ * Contains builtins for {@linkplain JSIterator} function (constructor).
  */
-public final class IteratorPrototypeBuiltins extends JSBuiltinsContainer.SwitchEnum<IteratorPrototypeBuiltins.IteratorPrototype> {
+public final class IteratorFunctionBuiltins extends JSBuiltinsContainer.SwitchEnum<IteratorFunctionBuiltins.IteratorFunction> {
 
-    public static final JSBuiltinsContainer BUILTINS = new IteratorPrototypeBuiltins();
+    public static final JSBuiltinsContainer BUILTINS = new IteratorFunctionBuiltins();
 
-    protected IteratorPrototypeBuiltins() {
-        super(JSIterator.PROTOTYPE_NAME, IteratorPrototype.class);
+    protected IteratorFunctionBuiltins() {
+        super(JSIterator.CLASS_NAME, IteratorFunction.class);
     }
 
-    public enum IteratorPrototype implements BuiltinEnum<IteratorPrototype> {
-        toArray(0);
+    public enum IteratorFunction implements BuiltinEnum<IteratorFunction> {
+        from(0);
 
         private final int length;
 
-        IteratorPrototype(int length) {
+        IteratorFunction(int length) {
             this.length = length;
         }
 
@@ -79,43 +77,23 @@ public final class IteratorPrototypeBuiltins extends JSBuiltinsContainer.SwitchE
     }
 
     @Override
-    protected Object createNode(JSContext context, JSBuiltin builtin, boolean construct, boolean newTarget, IteratorPrototype builtinEnum) {
+    protected Object createNode(JSContext context, JSBuiltin builtin, boolean construct, boolean newTarget, IteratorFunction builtinEnum) {
         switch (builtinEnum) {
-            case toArray:
-                return JSIteratorToArrayNodeGen.create(context, builtin, args().withThis().fixedArgs(0).createArgumentNodes(context));
+            case from:
+                return JSIteratorFromNodeGen.create(context, builtin, args().fixedArgs(0).createArgumentNodes(context));
         }
         return null;
     }
 
-    /** Dummy value to associate with a key in the backing map. */
-    protected static final Object PRESENT = new Object();
+    public abstract static class JSIteratorFromNode extends JSBuiltinNode {
 
-    protected static RuntimeException typeErrorKeyIsNotObject() {
-        throw Errors.createTypeError("Iterator key must be an object");
-    }
-
-    protected static RuntimeException typeErrorIteratorExpected() {
-        throw Errors.createTypeError("Iterator expected");
-    }
-
-    /**
-     * Implementation of the Iterator.prototype.has().
-     */
-    public abstract static class JSIteratorToArrayNode extends JSBuiltinNode {
-
-        public JSIteratorToArrayNode(JSContext context, JSBuiltin builtin) {
+        public JSIteratorFromNode(JSContext context, JSBuiltin builtin) {
             super(context, builtin);
         }
 
-        @Specialization(guards = {"isJSIterator(thisObj)"})
-        protected static JSDynamicObject toArray(DynamicObject thisObj) {
+        @Specialization
+        protected JSDynamicObject from() {
             return Undefined.instance;
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization(guards = "!isJSIterator(thisObj)")
-        protected static JSDynamicObject notIterator(Object thisObj) {
-            throw typeErrorIteratorExpected();
         }
     }
 }
