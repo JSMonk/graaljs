@@ -790,6 +790,11 @@ public final class Errors {
     }
 
     @TruffleBoundary
+    public static JSException createTypeErrorObjectIsNotIterated(Object value, Node originatingNode) {
+        return Errors.createTypeError("Object  " + JSRuntime.safeToString(value) + " is not an iterated object", originatingNode);
+    }
+
+    @TruffleBoundary
     public static JSException createTypeErrorCannotGetPrivateMember(String name, Node originatingNode) {
         return createTypeError(String.format("Cannot read private member %s from an object whose class did not declare it.", name), originatingNode);
     }

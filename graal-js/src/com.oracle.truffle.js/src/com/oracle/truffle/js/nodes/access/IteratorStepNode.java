@@ -62,7 +62,13 @@ public class IteratorStepNode extends JavaScriptBaseNode {
     }
 
     public Object execute(IteratorRecord iteratorRecord) {
-        DynamicObject result = iteratorNextNode.execute(iteratorRecord);
+        return execute(iteratorRecord, null);
+    }
+
+    public Object execute(IteratorRecord iteratorRecord, Object value) {
+        DynamicObject result = value == null
+                ? iteratorNextNode.execute(iteratorRecord)
+                : iteratorNextNode.execute(iteratorRecord, value);
         Object done = iteratorCompleteNode.execute(result);
         if (done == Boolean.TRUE) {
             return false;

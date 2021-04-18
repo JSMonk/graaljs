@@ -43,60 +43,52 @@ package com.oracle.truffle.js.runtime.builtins;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.Shape;
-import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.js.builtins.IteratorFunctionBuiltins;
-import com.oracle.truffle.js.builtins.IteratorPrototypeBuiltins;
+import com.oracle.truffle.js.builtins.WrapForValidIteratorPrototypeBuiltins;
 import com.oracle.truffle.js.runtime.JSContext;
 import com.oracle.truffle.js.runtime.JSRealm;
-import com.oracle.truffle.js.runtime.Symbol;
-import com.oracle.truffle.js.runtime.objects.JSAttributes;
-import com.oracle.truffle.js.runtime.objects.JSObjectUtil;
+import com.oracle.truffle.js.runtime.objects.*;
 
-public final class JSIterator extends JSNonProxy implements JSConstructorFactory.Default.WithFunctions, PrototypeSupplier {
+public final class JSWrapForValidIterator extends JSNonProxy implements JSConstructorFactory.Default.WithFunctions, PrototypeSupplier {
 
-    public static final JSIterator INSTANCE = new JSIterator();
-    public static final HiddenKey ITERATED = new HiddenKey("Iterated");
+    public static final JSWrapForValidIterator INSTANCE = new JSWrapForValidIterator();
 
-    public static final String CLASS_NAME = "Iterator";
+    public static final String CLASS_NAME = "WrapForValidIterator";
     public static final String PROTOTYPE_NAME = CLASS_NAME + ".prototype";
 
-    private JSIterator() {}
+    private JSWrapForValidIterator() {}
 
     public static DynamicObject create(JSContext context) {
         JSRealm realm = context.getRealm();
         JSObjectFactory factory = context.getIteratorFactory();
-        DynamicObject obj = factory.initProto(new JSIteratorObject(factory.getShape(realm)), realm);
+        DynamicObject obj = JSOrdinaryObject.create(factory.getShape(realm));
+        factory.initProto(obj, realm);
+        JSObjectUtil.putHiddenProperty(obj, JSIterator.ITERATED, Undefined.instance);
         return context.trackAllocation(obj);
+    }
+
+    public static DynamicObject createWithIteratorRecord(JSContext context, IteratorRecord iteratorRecord) {
+        DynamicObject obj = create(context);
+        JSObjectUtil.putHiddenProperty(obj, JSIterator.ITERATED, iteratorRecord);
+        return obj;
     }
 
     @Override
     public DynamicObject createPrototype(final JSRealm realm, DynamicObject ctor) {
-        JSContext ctx = realm.getContext();
         DynamicObject prototype = JSObjectUtil.createOrdinaryPrototypeObject(realm);
-        JSObjectUtil.putDataProperty(ctx, prototype, Symbol.SYMBOL_ITERATOR, createIteratorPrototypeSymbolIteratorFunction(realm), JSAttributes.getDefaultNotEnumerable());
-        JSObjectUtil.putFunctionsFromContainer(realm, prototype, IteratorPrototypeBuiltins.BUILTINS);
+        JSObjectUtil.putFunctionsFromContainer(realm, prototype, WrapForValidIteratorPrototypeBuiltins.BUILTINS);
         JSObjectUtil.putToStringTag(prototype, CLASS_NAME);
         return prototype;
     }
 
-    private static DynamicObject createIteratorPrototypeSymbolIteratorFunction(JSRealm realm) {
-        return JSFunction.create(realm, JSFunctionData.createCallOnly(realm.getContext(), realm.getContext().getSpeciesGetterFunctionCallTarget(), 0, "[Symbol.iterator]"));
-    }
-
-
     @Override
     public Shape makeInitialShape(JSContext context, DynamicObject prototype) {
-        Shape initialShape = JSObjectUtil.getProtoChildShape(prototype, JSIterator.INSTANCE, context);
+        Shape initialShape = JSObjectUtil.getProtoChildShape(prototype, JSWrapForValidIterator.INSTANCE, context);
         return initialShape;
     }
 
     public static JSConstructor createConstructor(JSRealm realm) {
         return INSTANCE.createConstructorAndPrototype(realm, IteratorFunctionBuiltins.BUILTINS);
-    }
-
-    public static boolean isJSIterator(Object obj) {
-        // TODO: Create Iterator Object
-        return true;
     }
 
     @Override
