@@ -43,13 +43,12 @@ package com.oracle.truffle.js.runtime.builtins;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.Shape;
-import com.oracle.truffle.js.builtins.IteratorFunctionBuiltins;
 import com.oracle.truffle.js.builtins.WrapForValidIteratorPrototypeBuiltins;
 import com.oracle.truffle.js.runtime.JSContext;
 import com.oracle.truffle.js.runtime.JSRealm;
 import com.oracle.truffle.js.runtime.objects.*;
 
-public final class JSWrapForValidIterator extends JSNonProxy implements JSConstructorFactory.Default.WithFunctions, PrototypeSupplier {
+public final class JSWrapForValidIterator extends JSNonProxy implements JSConstructorFactory.Default, PrototypeSupplier {
 
     public static final JSWrapForValidIterator INSTANCE = new JSWrapForValidIterator();
 
@@ -60,10 +59,8 @@ public final class JSWrapForValidIterator extends JSNonProxy implements JSConstr
 
     public static DynamicObject create(JSContext context) {
         JSRealm realm = context.getRealm();
-        JSObjectFactory factory = context.getIteratorFactory();
-        DynamicObject obj = JSOrdinaryObject.create(factory.getShape(realm));
-        factory.initProto(obj, realm);
-        JSObjectUtil.putHiddenProperty(obj, JSIterator.ITERATED, Undefined.instance);
+        DynamicObject prototype = realm.getWrapForValidIteratorPrototype();
+        DynamicObject obj = JSOrdinary.createWithPrototype(prototype, context);
         return context.trackAllocation(obj);
     }
 
@@ -75,7 +72,7 @@ public final class JSWrapForValidIterator extends JSNonProxy implements JSConstr
 
     @Override
     public DynamicObject createPrototype(final JSRealm realm, DynamicObject ctor) {
-        DynamicObject prototype = JSObjectUtil.createOrdinaryPrototypeObject(realm);
+        DynamicObject prototype = JSObjectUtil.createOrdinaryPrototypeObject(realm, realm.getIteratorPrototype());
         JSObjectUtil.putFunctionsFromContainer(realm, prototype, WrapForValidIteratorPrototypeBuiltins.BUILTINS);
         JSObjectUtil.putToStringTag(prototype, CLASS_NAME);
         return prototype;
@@ -87,8 +84,10 @@ public final class JSWrapForValidIterator extends JSNonProxy implements JSConstr
         return initialShape;
     }
 
-    public static JSConstructor createConstructor(JSRealm realm) {
-        return INSTANCE.createConstructorAndPrototype(realm, IteratorFunctionBuiltins.BUILTINS);
+    public static DynamicObject createPrototype(final JSRealm realm) {
+        DynamicObject prototype = INSTANCE.createPrototype(realm, null);
+        JSObjectUtil.putPrototypeData(prototype);
+        return prototype;
     }
 
     @Override

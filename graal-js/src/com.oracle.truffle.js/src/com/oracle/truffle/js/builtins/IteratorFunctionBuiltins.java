@@ -60,6 +60,7 @@ import com.oracle.truffle.js.runtime.builtins.BuiltinEnum;
 import com.oracle.truffle.js.runtime.objects.IteratorRecord;
 import com.oracle.truffle.js.nodes.function.JSFunctionCallNode;
 import com.oracle.truffle.js.builtins.IteratorFunctionBuiltinsFactory.JSIteratorFromNodeGen;
+import com.oracle.truffle.js.runtime.objects.Undefined;
 
 /**
  * Contains builtins for {@linkplain JSIterator} function (constructor).
@@ -117,7 +118,8 @@ public final class IteratorFunctionBuiltins extends JSBuiltinsContainer.SwitchEn
         protected DynamicObject from(Object thisObj, Object target) {
             Object usingIterator = getIteratorMethodNode.executeWithTarget(target);
             IteratorRecord iteratorRecord;
-            if (isIterable.profile(JSGuards.isUndefined(usingIterator))) {
+
+            if (isIterable.profile(usingIterator != Undefined.instance)) {
                 iteratorRecord = getIterator(target, usingIterator);
                 DynamicObject iterator = iteratorRecord.getIterator();
                 boolean hasInstance = ordinaryHasInstanceNode.executeBoolean(thisObj, iterator);

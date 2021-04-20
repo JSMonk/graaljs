@@ -83,7 +83,6 @@ public final class JSIterator extends JSNonProxy implements JSConstructorFactory
         return JSFunction.create(realm, JSFunctionData.createCallOnly(realm.getContext(), realm.getContext().getSpeciesGetterFunctionCallTarget(), 0, "[Symbol.iterator]"));
     }
 
-
     @Override
     public Shape makeInitialShape(JSContext context, DynamicObject prototype) {
         Shape initialShape = JSObjectUtil.getProtoChildShape(prototype, JSIterator.INSTANCE, context);

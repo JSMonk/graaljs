@@ -249,6 +249,9 @@ public class JSRealm {
     private final DynamicObject finalizationRegistryPrototype;
 
     private final DynamicObject iteratorPrototype;
+
+    private final DynamicObject wrapForValidIteratorPrototype;
+
     private final DynamicObject arrayIteratorPrototype;
     private final DynamicObject setIteratorPrototype;
     private final DynamicObject mapIteratorPrototype;
@@ -480,6 +483,8 @@ public class JSRealm {
             ctor = JSIterator.createConstructor(this);
             this.iteratorConstructor = ctor.getFunctionObject();
             this.iteratorPrototype = ctor.getPrototype();
+
+            this.wrapForValidIteratorPrototype = JSWrapForValidIterator.createPrototype(this);
         } else {
             this.symbolConstructor = null;
             this.symbolPrototype = null;
@@ -493,6 +498,7 @@ public class JSRealm {
             this.weakSetPrototype = null;
             this.iteratorConstructor = null;
             this.iteratorPrototype = null;
+            this.wrapForValidIteratorPrototype = null;
             this.proxyConstructor = null;
             this.proxyPrototype = null;
             this.promiseConstructor = null;
@@ -1164,6 +1170,10 @@ public class JSRealm {
 
     public DynamicObject getIteratorPrototype() {
         return iteratorPrototype;
+    }
+
+    public DynamicObject getWrapForValidIteratorPrototype() {
+        return wrapForValidIteratorPrototype;
     }
 
     public DynamicObject getAsyncIteratorPrototype() {

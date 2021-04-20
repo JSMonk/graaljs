@@ -40,9 +40,6 @@
  */
 package com.oracle.truffle.js.runtime.builtins;
 
-import java.util.Map;
-
-import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.js.runtime.objects.JSNonProxyObject;
 
