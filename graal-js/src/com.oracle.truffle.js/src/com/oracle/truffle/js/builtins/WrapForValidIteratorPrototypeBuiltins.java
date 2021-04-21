@@ -23,6 +23,7 @@ import com.oracle.truffle.js.runtime.objects.JSObjectUtil;
 import com.oracle.truffle.js.builtins.WrapForValidIteratorPrototypeBuiltinsFactory.JSWrapForValidIteratorNextNodeGen;
 import com.oracle.truffle.js.builtins.WrapForValidIteratorPrototypeBuiltinsFactory.JSWrapForValidIteratorThrowNodeGen;
 import com.oracle.truffle.js.builtins.WrapForValidIteratorPrototypeBuiltinsFactory.JSWrapForValidIteratorReturnNodeGen;
+import com.oracle.truffle.js.runtime.objects.Undefined;
 
 public final class WrapForValidIteratorPrototypeBuiltins extends JSBuiltinsContainer.SwitchEnum<WrapForValidIteratorPrototypeBuiltins.WrapForValidIteratorPrototype> {
     public static final JSBuiltinsContainer BUILTINS = new WrapForValidIteratorPrototypeBuiltins();
@@ -62,7 +63,7 @@ public final class WrapForValidIteratorPrototypeBuiltins extends JSBuiltinsConta
     protected Object createNode(JSContext context, JSBuiltin builtin, boolean construct, boolean newTarget, WrapForValidIteratorPrototype builtinEnum) {
         switch (builtinEnum) {
             case next:
-                return JSWrapForValidIteratorNextNodeGen.create(context, builtin, args().varArgs().createArgumentNodes(context));
+                return JSWrapForValidIteratorNextNodeGen.create(context, builtin, args().withThis().varArgs().createArgumentNodes(context));
             case return_:
                 return JSWrapForValidIteratorReturnNodeGen.create(context, builtin, args().fixedArgs(1).createArgumentNodes(context));
             case throw_:
@@ -82,12 +83,13 @@ public final class WrapForValidIteratorPrototypeBuiltins extends JSBuiltinsConta
         }
 
         @Specialization
-        protected DynamicObject next(DynamicObject thisObj, Object... values) {
+        protected DynamicObject next(DynamicObject thisObj, Object[] values) {
             WrapForValidIteratorPrototypeBuiltins.requireIteratedInternalSlot(thisObj, this);
 
             IteratorRecord iterated = WrapForValidIteratorPrototypeBuiltins.getIteratedInternalSlot(thisObj);
             Object value = JSRuntime.getArgOrUndefined(values, 0);
-            if (isValuePresent.profile(!JSGuards.isUndefined(value))) {
+
+            if (isValuePresent.profile(value != Undefined.instance)) {
                 return iteratorNextNode.execute(iterated, value);
             } else {
                 return iteratorNextNode.execute(iterated);

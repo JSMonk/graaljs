@@ -102,14 +102,14 @@ public final class IteratorFunctionBuiltins extends JSBuiltinsContainer.SwitchEn
         @Child private JSFunctionCallNode callIteratorMethodNode;
         @Child private IsJSObjectNode isObjectNode;
         @Child private PropertyGetNode getNextMethodNode;
+        @Child private GetIteratorDirectNode getIteratorDirectNode;
         @Child private InstanceofNode.OrdinaryHasInstanceNode ordinaryHasInstanceNode;
-        @Child private CreateObjectNode.CreateObjectWithPrototypeNode createObjectNode;
 
         private final ConditionProfile isIterable = ConditionProfile.createBinaryProfile();
 
         public JSIteratorFromNode(JSContext context, JSBuiltin builtin) {
             super(context, builtin);
-            this.createObjectNode = CreateObjectNode.createOrdinaryWithPrototype(context);
+            this.getIteratorDirectNode = GetIteratorDirectNode.create(context);
             this.getIteratorMethodNode = GetMethodNode.create(context, null, Symbol.SYMBOL_ITERATOR);
             this.ordinaryHasInstanceNode = InstanceofNode.OrdinaryHasInstanceNode.create(context);
         }
@@ -127,7 +127,7 @@ public final class IteratorFunctionBuiltins extends JSBuiltinsContainer.SwitchEn
                     return iterator;
                 }
             } else {
-                iteratorRecord = getIteratorDirect(target);
+                iteratorRecord = getIteratorDirectNode.execute(target);
             }
 
             return createWrapForValidIteratorPrototype(iteratorRecord);
@@ -152,23 +152,6 @@ public final class IteratorFunctionBuiltins extends JSBuiltinsContainer.SwitchEn
             }
 
             return GetIteratorNode.getIterator(object, usingIterator, callIteratorMethodNode, isObjectNode, getNextMethodNode, this);
-        }
-
-        private IteratorRecord getIteratorDirect(Object object) {
-            if (isObjectNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                isObjectNode = insert(IsJSObjectNode.create());
-            }
-            if (getNextMethodNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getNextMethodNode = insert(PropertyGetNode.create(JSRuntime.NEXT, getContext()));
-            }
-
-            if (isObjectNode.executeBoolean(object)) {
-                return IteratorRecord.create((DynamicObject) object, getNextMethodNode.getValue(object), false);
-            }
-
-            throw Errors.createTypeErrorNotAnObject(object, this);
         }
     }
 }

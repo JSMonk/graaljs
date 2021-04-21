@@ -40,17 +40,29 @@
  */
 package com.oracle.truffle.js.builtins;
 
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.js.builtins.IteratorPrototypeBuiltinsFactory.JSIteratorToArrayNodeGen;
+import com.oracle.truffle.js.nodes.access.GetIteratorDirectNode;
+import com.oracle.truffle.js.nodes.access.IteratorStepNode;
+import com.oracle.truffle.js.nodes.access.IteratorValueNode;
 import com.oracle.truffle.js.nodes.function.JSBuiltin;
 import com.oracle.truffle.js.nodes.function.JSBuiltinNode;
 import com.oracle.truffle.js.runtime.Errors;
 import com.oracle.truffle.js.runtime.JSContext;
+import com.oracle.truffle.js.runtime.JSRuntime;
 import com.oracle.truffle.js.runtime.builtins.BuiltinEnum;
 import com.oracle.truffle.js.runtime.builtins.JSIterator;
+import com.oracle.truffle.js.runtime.objects.IteratorRecord;
 import com.oracle.truffle.js.runtime.objects.JSDynamicObject;
 import com.oracle.truffle.js.runtime.objects.Undefined;
+import com.oracle.truffle.js.runtime.util.SimpleArrayList;
+import com.oracle.truffle.js.runtime.util.UnmodifiableArrayList;
+
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  * Contains builtins for {@linkplain JSIterator}.prototype.
@@ -102,20 +114,45 @@ public final class IteratorPrototypeBuiltins extends JSBuiltinsContainer.SwitchE
      * Implementation of the Iterator.prototype.has().
      */
     public abstract static class JSIteratorToArrayNode extends JSBuiltinNode {
+        @Child private GetIteratorDirectNode getIteratorDirectNode;
+        @Child private IteratorStepNode iteratorStepNode;
+        @Child private IteratorValueNode getIteratorValueNode;
+
+        private final BranchProfile growProfile = BranchProfile.create();
 
         public JSIteratorToArrayNode(JSContext context, JSBuiltin builtin) {
             super(context, builtin);
+            this.getIteratorDirectNode = GetIteratorDirectNode.create(context);
         }
 
-        @Specialization(guards = {"isJSIterator(thisObj)"})
-        protected static JSDynamicObject toArray(DynamicObject thisObj) {
-            return Undefined.instance;
+        @Specialization()
+        protected DynamicObject toArray(Object thisObj) {
+            IteratorRecord iterated = getIteratorDirectNode.execute(thisObj);
+            SimpleArrayList<Object> items = new SimpleArrayList<>();
+            while (true) {
+                Object next = iteratorStep(iterated);
+                if (next == Boolean.FALSE) {
+                    break;
+                }
+                Object nextValue = getIteratorValue((DynamicObject) next);
+                items.add(nextValue, growProfile);
+            }
+            return JSRuntime.createArrayFromList(getContext(), new UnmodifiableArrayList<>(items.toArray()));
         }
 
-        @SuppressWarnings("unused")
-        @Specialization(guards = "!isJSIterator(thisObj)")
-        protected static JSDynamicObject notIterator(Object thisObj) {
-            throw typeErrorIteratorExpected();
+        protected Object iteratorStep(IteratorRecord iteratorRecord) {
+            if (iteratorStepNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                iteratorStepNode = insert(IteratorStepNode.create(getContext()));
+            }
+            return iteratorStepNode.execute(iteratorRecord);
+        }
+        protected Object getIteratorValue(DynamicObject iteratorResult) {
+            if (getIteratorValueNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getIteratorValueNode = insert(IteratorValueNode.create(getContext()));
+            }
+            return getIteratorValueNode.execute(iteratorResult);
         }
     }
 }
