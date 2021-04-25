@@ -58,6 +58,10 @@ public interface BuiltinEnum<E extends Enum<? extends BuiltinEnum<E>>> {
         return getName();
     }
 
+    default boolean isGenerator() {
+        return false;
+    }
+
     default boolean isConstructor() {
         return false;
     }
